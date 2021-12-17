@@ -26,12 +26,12 @@ spec:
     }
   }
   // environment {
-  //   // APP_NAME = 'provider-search'
-  //   // PROJECT = 'my-test-project'
-  //   // CONTRAST_URL = 'asdf'
-  //   // CONTRAST_APIKEY = 'asdf'
-  //   // CONTRAST_SERVICEKEY = 'asdf'
-  //   // CONTRAST_USERNAME = 'asdf'
+  //   // APP_NAME = ''
+  //   // PROJECT = ''
+  //   // CONTRAST_URL = ''
+  //   // CONTRAST_APIKEY = ''
+  //   // CONTRAST_SERVICEKEY = ''
+  //   // CONTRAST_USERNAME = ''
   // }
   stages {
     stage('preamble') {
@@ -127,6 +127,12 @@ EOF
                 def bc = openshift.selector('bc', "${env.APP_NAME}-intermed")
                 def buildSelector = bc.startBuild()
                 buildSelector.logs('-f')
+
+                def contrastBC = openshift.selector('bc', "${env.APP_NAME}-contrast")
+                def builds = contrastBC.related('builds')
+                builds.untilEach(1) {
+                  return it.object().status.phase == "Complete"
+                }
               }
             }
           }
