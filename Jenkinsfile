@@ -25,14 +25,14 @@ spec:
 '''
     }
   }
-  environment {
-    // APP_NAME = 'provider-search'
-    // PROJECT = 'my-test-project'
-    // CONTRAST_URL = 'asdf'
-    // CONTRAST_APIKEY = 'asdf'
-    // CONTRAST_SERVICEKEY = 'asdf'
-    // CONTRAST_USERNAME = 'asdf'
-  }
+  // environment {
+  //   // APP_NAME = 'provider-search'
+  //   // PROJECT = 'my-test-project'
+  //   // CONTRAST_URL = 'asdf'
+  //   // CONTRAST_APIKEY = 'asdf'
+  //   // CONTRAST_SERVICEKEY = 'asdf'
+  //   // CONTRAST_USERNAME = 'asdf'
+  // }
   stages {
     stage('preamble') {
         steps {
