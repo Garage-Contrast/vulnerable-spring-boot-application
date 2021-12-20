@@ -1,0 +1,85 @@
+{
+	"info": {
+		"_postman_id": "ccf1c87b-6c61-4a86-a38d-441a00ef527c",
+		"name": "ContrastJavaFunctionalTests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get Root",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "c511184c-75ad-4dc2-9ea4-d3d971542262",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{scheme}}://{{hostname}}/",
+					"protocol": "{{scheme}}",
+					"host": [
+						"{{hostname}}"
+					],
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Post Root Request",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "7a06d05c-87e8-418a-8ada-d5793f392b1b",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "zipCode",
+							"value": "21230",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{scheme}}://{{hostname}}/",
+					"protocol": "{{scheme}}",
+					"host": [
+						"{{hostname}}"
+					],
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}
