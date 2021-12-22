@@ -27,6 +27,7 @@ spec:
   }
   // environment {
   //   // APP_NAME = ''
+  //   // DEPLOYMENT = ''
   //   // PROJECT = ''
   //   // CONTRAST_URL = ''
   //   // CONTRAST_APIKEY = ''
@@ -52,7 +53,7 @@ cat > buildconfig-template.yaml << 'EOF'
 apiVersion: build.openshift.io/v1
 kind: BuildConfig
 metadata:
-  name: ${APP_NAME}-intermed
+  name: ${DEPLOYMENT}-intermed
 spec:
   source:
     type: Git
@@ -65,12 +66,12 @@ spec:
   output:
     to:
       kind: ImageStreamTag
-      name: ${APP_NAME}:intermediate
+      name: ${DEPLOYMENT}:intermediate
 ---
 apiVersion: image.openshift.io/v1
 kind: ImageStream
 metadata:
-  name: $APP_NAME
+  name: $DEPLOYMENT
 spec:
   lookupPolicy:
     local: true
@@ -78,7 +79,7 @@ spec:
 apiVersion: build.openshift.io/v1
 kind: BuildConfig
 metadata:
-  name: ${APP_NAME}-contrast
+  name: ${DEPLOYMENT}-contrast
 spec:
   source:
     dockerfile: |
@@ -94,18 +95,18 @@ spec:
     dockerStrategy:
       from:
         kind: ImageStreamTag
-        name: ${APP_NAME}:intermediate
+        name: ${DEPLOYMENT}:intermediate
   output:
     to:
       kind: ImageStreamTag
-      name: ${APP_NAME}:${GIT_COMMIT}
+      name: ${DEPLOYMENT}:${GIT_COMMIT}
   triggers:
     - type: ImageChange
       imageChange: {}
 EOF
 '''
         container('openshift') {
-          sh "APP_NAME=${env.APP_NAME} GIT_URL=${env.GIT_URL} GIT_COMMIT=${env.GIT_COMMIT} envsubst '\$APP_NAME,\$GIT_COMMIT,\$GIT_URL' < \"buildconfig-template.yaml\" > \"buildconfig.yaml\""
+          sh "DEPLOYMENT=${env.DEPLOYMENT} GIT_URL=${env.GIT_URL} GIT_COMMIT=${env.GIT_COMMIT} envsubst '\$DEPLOYMENT,\$GIT_COMMIT,\$GIT_URL' < \"buildconfig-template.yaml\" > \"buildconfig.yaml\""
         }
         container('openshift') {
           script {
@@ -124,11 +125,11 @@ EOF
           script {
             openshift.withCluster() {
               openshift.withProject() {
-                def bc = openshift.selector('bc', "${env.APP_NAME}-intermed")
+                def bc = openshift.selector('bc', "${env.DEPLOYMENT}-intermed")
                 def buildSelector = bc.startBuild()
                 buildSelector.logs('-f')
 
-                def contrastBC = openshift.selector('bc', "${env.APP_NAME}-contrast")
+                def contrastBC = openshift.selector('bc', "${env.DEPLOYMENT}-contrast")
                 def builds = contrastBC.related('builds')
                 builds.untilEach(1) {
                   return it.object().status.phase == "Complete"
@@ -145,8 +146,8 @@ EOF
           script {
             openshift.withCluster() {
               openshift.withProject() {
-                openshift.apply(openshift.raw("create configmap contrast-cm-${env.APP_NAME} --from-literal=CONTRAST__API__URL=${env.CONTRAST_URL} --from-literal=CONTRAST__AGENT__JAVA__STANDALONE_APP_NAME=${env.APP_NAME} --from-literal=CONTRAST__APPLICATION__NAME=${env.APP_NAME} --dry-run -o yaml").actions[0].out)
-                openshift.apply(openshift.raw("create secret generic contrast-secret-${env.APP_NAME} --from-literal=CONTRAST__API__API_KEY=${env.CONTRAST_APIKEY} --from-literal=CONTRAST__API__SERVICE_KEY=${env.CONTRAST_SERVICEKEY} --from-literal=CONTRAST__API__USER_NAME=${env.CONTRAST_USERNAME} --dry-run -o yaml").actions[0].out)
+                openshift.apply(openshift.raw("create configmap contrast-cm-${env.DEPLOYMENT} --from-literal=CONTRAST__API__URL=${env.CONTRAST_URL} --from-literal=CONTRAST__AGENT__JAVA__STANDALONE_APP_NAME=${env.APP_NAME} --from-literal=CONTRAST__APPLICATION__NAME=${env.APP_NAME} --dry-run -o yaml").actions[0].out)
+                openshift.apply(openshift.raw("create secret generic contrast-secret-${env.DEPLOYMENT} --from-literal=CONTRAST__API__API_KEY=${env.CONTRAST_APIKEY} --from-literal=CONTRAST__API__SERVICE_KEY=${env.CONTRAST_SERVICEKEY} --from-literal=CONTRAST__API__USER_NAME=${env.CONTRAST_USERNAME} --dry-run -o yaml").actions[0].out)
               }
             }
           }
@@ -163,30 +164,30 @@ done
 
 cat >> kustomization-template.yaml << 'EOF'
 images:
-- name: .*${APP_NAME}.*
+- name: .*${DEPLOYMENT}.*
   newTag: $GIT_COMMIT
-  newName: image-registry.openshift-image-registry.svc:5000/${NAMESPACE}/${APP_NAME}
+  newName: image-registry.openshift-image-registry.svc:5000/${NAMESPACE}/${DEPLOYMENT}
 patchesStrategicMerge:
 - |-
   apiVersion: apps/v1
   kind: Deployment
   metadata:
-    name: ${APP_NAME}
+    name: ${DEPLOYMENT}
   spec:
     template:
       spec:
         containers:
-          - name: ${APP_NAME}
+          - name: ${DEPLOYMENT}
             envFrom:
             - configMapRef:
-                name: contrast-cm-${APP_NAME}
+                name: contrast-cm-${DEPLOYMENT}
             - secretRef:
-                name: contrast-secret-${APP_NAME}
+                name: contrast-secret-${DEPLOYMENT}
 EOF
 '''
         }
         container('openshift') {
-          sh "cd manifests && APP_NAME=${env.APP_NAME} NAMESPACE=${env.PROJECT} GIT_COMMIT=${env.GIT_COMMIT} envsubst '\$APP_NAME,\$NAMESPACE,\$GIT_COMMIT' < \"kustomization-template.yaml\" > \"kustomization.yaml\""
+          sh "cd manifests && DEPLOYMENT=${env.DEPLOYMENT} NAMESPACE=${env.PROJECT} GIT_COMMIT=${env.GIT_COMMIT} envsubst '\$DEPLOYMENT,\$NAMESPACE,\$GIT_COMMIT' < \"kustomization-template.yaml\" > \"kustomization.yaml\""
         }
       }
     }
